@@ -1,28 +1,362 @@
-<!DOCTYPE HTML>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title> Carzzy Coder | Home Page</title>
-        <link rel="stylesheet" href="/styles.css">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Live Editor</title>
+  <link rel="stylesheet" href="https://carzzycoder.github.io/styles.css">
+  <!--
+    <style>
+    body {
+      margin: 0;
+      font-family: system-ui, Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
 
-            <style>
-                body{
-                    align-items: center
-                    text-align: center
-                }        
-            </style>
-    </head>
+    header {
+      padding: 1rem;
+      background: #151515;
+      border-bottom: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
 
-    <body>
-        <h1>Carzzy Coder</h1>
-        <h3>Your Home For Online Coding</h3>
-        <p>
-            This tool is a Real-Time HTML Sandbox, designed for instant code 
-            experimentation and prototyping. It provides a streamlined, 
-            distraction-free environment where you can write code and see the 
-            visual results immediately as you type.
-        </p>
-        <button onclick="window.location.href='/create'">Try It Free Today!!!</button>
-    </body>
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .toolbar {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .control {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.55rem;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      background: #232323;
+      color: #e6edf3;
+    }
+
+    .control span {
+      font-size: 0.8rem;
+      color: #9fb3c8;
+    }
+
+    .control input,
+    .control select {
+      border: none;
+      border-radius: 6px;
+      padding: 0.25rem 0.4rem;
+      background: #101010;
+      color: #f8fafc;
+      font: inherit;
+      min-width: 4.4rem;
+    }
+
+    button#toggleEditorButton,
+    button#formatButton {
+      padding: 0.5rem 0.9rem;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      background: #282828;
+      color: #eee;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button#toggleEditorButton:hover,
+    button#formatButton:hover {
+      background: #333;
+    }
+
+    button#toggleEditorButton.active {
+      background: #2563eb;
+      border-color: #60a5fa;
+    }
+
+    .layout {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      padding: 1rem;
+      min-height: 0;
+    }
+
+    .layout.editor-hidden {
+      grid-template-columns: 1fr;
+    }
+
+    .layout.editor-hidden .editor-panel {
+      display: none;
+    }
+
+    .panel {
+      background: #181818;
+      border: 1px solid #2c2c2c;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 0.8rem 1rem;
+      background: #141414;
+      border-bottom: 1px solid #2a2a2a;
+      font-size: 1rem;
+    }
+
+    .editor-container {
+      position: relative;
+      flex: 1;
+      overflow: auto;
+      background: #0f172a;
+    }
+
+    .highlight {
+      display: none;
+    }
+
+    .highlight span.tag,
+    .highlight span.attr,
+    .highlight span.value,
+    .highlight span.comment,
+    .highlight span.text,
+    .highlight span.punctuation {
+      color: #ffffff;
+      font-weight: 400;
+      font-style: normal;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      margin: 0;
+      padding: 1rem;
+      resize: none;
+      border: none;
+      outline: none;
+      background: #0f172a;
+      color: #ffffff;
+      -webkit-text-fill-color: #ffffff;
+      font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+      font-size: 0.94rem;
+      line-height: 1.5rem;
+      white-space: pre-wrap;
+      word-break: normal;
+      overflow-wrap: normal;
+      overflow: auto;
+      z-index: 1;
+      caret-color: #ff79c6;
+      box-sizing: border-box;
+      tab-size: 2;
+    }
+
+    textarea::selection {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .preview-panel {
+      min-width: 0;
+    }
+
+    .viewport-shell {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 1rem;
+      overflow: auto;
+      background: linear-gradient(135deg, #111827, #1f2937);
+    }
+
+    .viewport-frame {
+      width: 100%;
+      height: 100%;
+      border: 2px solid #334155;
+      border-radius: 18px;
+      overflow: hidden;
+      background: white;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      transition: width 0.2s ease, height 0.2s ease;
+    }
+
+    .viewport-frame.mobile {
+      border-radius: 28px;
+    }
+
+    .viewer {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+      display: block;
+    }
+
+    .footer {
+      padding: 0.75rem 1rem;
+      font-size: 0.9rem;
+      background: #141414;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .viewer {
+        min-height: 320px;
+      }
+    }
+  </style>
+-->
+</head>
+<body>
+  <header>
+    <h1>HTML Live Editor</h1>
+    <div class="toolbar">
+      <label class="control">
+        <span>Viewport</span>
+        <select id="viewportSelect">
+          <option value="desktop">Desktop</option>
+          <option value="mobile">Mobile</option>
+          <option value="tablet">Tablet</option>
+          <option value="custom">Custom</option>
+        </select>
+      </label>
+      <label class="control">
+        <span>W</span>
+        <input id="viewportWidth" type="number" min="320" max="1400" value="390">
+      </label>
+      <label class="control">
+        <span>H</span>
+        <input id="viewportHeight" type="number" min="320" max="1800" value="844">
+      </label>
+      <button id="toggleEditorButton">Hide Editor</button>
+    </div>
+  </header>
+  <div class="layout">
+    <section class="panel editor-panel">
+      <h2>Code Editor</h2>
+      <div class="editor-container">
+        <pre class="highlight" aria-hidden="true"></pre>
+        <textarea id="editor" spellcheck="false"></textarea>
+      </div>
+    </section>
+    <section class="panel preview-panel">
+      <h2>Live Preview</h2>
+      <div class="viewport-shell">
+        <div id="viewportFrame" class="viewport-frame">
+          <iframe id="viewer" class="viewer"></iframe>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="footer">Type HTML in the left editor. The preview updates automatically.</div>
+
+  <script>
+    const editor = document.getElementById('editor');
+    const highlight = document.querySelector('.highlight');
+    const viewer = document.getElementById('viewer');
+    const toggleEditorButton = document.getElementById('toggleEditorButton');
+    const viewportSelect = document.getElementById('viewportSelect');
+    const viewportWidth = document.getElementById('viewportWidth');
+    const viewportHeight = document.getElementById('viewportHeight');
+    const viewportFrame = document.getElementById('viewportFrame');
+    const layout = document.querySelector('.layout');
+
+    const defaultCode = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>Preview</title>\n  <style>\n    body { font-family: Arial, sans-serif; padding: 2rem; color: #333; }\n    h1 { color: #3b82f6; }\n  </style>\n</head>\n<body>\n  <h1>HTML Live Editor</h1>\n  <p>Type HTML on the left and see it rendered live on the right.</p>\n</body>\n</html>`;
+
+    let updateTimer = null;
+    let editorHidden = false;
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function highlightCode(value) {
+      return escapeHtml(value)
+        .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="comment">$1</span>')
+        .replace(/(&lt;!DOCTYPE[^&gt;]*&gt;)/gi, '<span class="tag">$1</span>')
+        .replace(/(&lt;\/?)(([a-zA-Z0-9:-]+))([^&gt;]*?)(\/?&gt;)/g, (match, open, tagName, attributes, close) => {
+          const highlightedAttrs = attributes
+            .replace(/([a-zA-Z_:][\w:.-]*)(\s*=\s*)("[^"]*"|'[^']*')/g,
+              '<span class="attr">$1</span>$2<span class="value">$3</span>')
+            .replace(/([<>\/ =])/g, '<span class="punctuation">$1</span>');
+          return `${open}<span class="tag">${tagName}</span>${highlightedAttrs}${close}`;
+        })
+        .replace(/(&gt;)([^&<]*?)(?=&lt;|$)/g, (match, gt, text) => `${gt}<span class="text">${text}</span>`);
+    }
+
+    function update() {
+      const code = editor.value;
+      viewer.srcdoc = code;
+    }
+
+    function scheduleUpdate() {
+      clearTimeout(updateTimer);
+      updateTimer = setTimeout(update, 450);
+    }
+
+    function applyViewport() {
+      const mode = viewportSelect.value;
+      if (mode === 'desktop') {
+        viewportFrame.style.width = '100%';
+        viewportFrame.style.height = '100%';
+      } else if (mode === 'mobile') {
+        viewportFrame.style.width = '390px';
+        viewportFrame.style.height = '844px';
+      } else if (mode === 'tablet') {
+        viewportFrame.style.width = '768px';
+        viewportFrame.style.height = '1024px';
+      } else {
+        const width = Math.max(320, parseInt(viewportWidth.value || '390', 10));
+        const height = Math.max(320, parseInt(viewportHeight.value || '844', 10));
+        viewportFrame.style.width = `${width}px`;
+        viewportFrame.style.height = `${height}px`;
+      }
+      viewportFrame.classList.toggle('mobile', mode !== 'desktop');
+    }
+
+    function toggleEditorView() {
+      editorHidden = !editorHidden;
+      layout.classList.toggle('editor-hidden', editorHidden);
+      toggleEditorButton.classList.toggle('active', editorHidden);
+      toggleEditorButton.textContent = editorHidden ? 'Show Editor' : 'Hide Editor';
+    }
+
+    editor.value = defaultCode;
+    update();
+    applyViewport();
+
+    editor.addEventListener('input', scheduleUpdate);
+
+    viewportSelect.addEventListener('change', applyViewport);
+    viewportWidth.addEventListener('input', applyViewport);
+    viewportHeight.addEventListener('input', applyViewport);
+
+    toggleEditorButton.addEventListener('click', toggleEditorView);
+  </script>
+</body>
 </html>
