@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTML Live Editor</title>
-  <link rel="icon" type="image/png" href="/carzzycoder_favicon.png">
   <style>
     .viewport-frame {
       resize: both;
@@ -171,7 +170,8 @@
 
     button#toggleEditorButton,
     button#formatButton,
-    button#openPreviewModalButton {
+    button#openPreviewModalButton,
+    button#resetButton {
       padding: 0.5rem 0.9rem;
       border: 1px solid #2a2a2a;
       border-radius: 8px;
@@ -183,7 +183,8 @@
 
     button#toggleEditorButton:hover,
     button#formatButton:hover,
-    button#openPreviewModalButton:hover {
+    button#openPreviewModalButton:hover,
+    button#resetButton:hover {
       background: #333;
     }
 
@@ -443,6 +444,7 @@
         </span>
       </span>
       <button id="toggleEditorButton">Hide Editor</button>
+      <button id="resetButton">Reset</button>
       <button id="openPreviewModalButton">Open Preview</button>
     </div>
   </header>
@@ -494,12 +496,29 @@
     const layout = document.querySelector('.layout');
     const previewModal = document.getElementById('previewModal');
     const openPreviewModalButton = document.getElementById('openPreviewModalButton');
+    const resetButton = document.getElementById('resetButton');
     const closeModalButton = document.getElementById('closeModalButton');
     const modalViewer = document.getElementById('modalViewer');
     const minEditorWidth = 240;
     const minPreviewWidth = 320;
+    const savedCodeKey = 'htmlLiveEditorCode';
 
     const defaultCode = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>Preview</title>\n  <style>\n    body { font-family: Arial, sans-serif; padding: 2rem; color: #333; }\n    h1 { color: #3b82f6; }\n  </style>\n</head>\n<body>\n  <h1>HTML Live Editor</h1>\n  <p>Type HTML on the left and see it rendered live on the right.</p>\n</body>\n</html>`;
+
+    function loadSavedCode() {
+      const saved = localStorage.getItem(savedCodeKey);
+      return saved || defaultCode;
+    }
+
+    function saveCode(value) {
+      localStorage.setItem(savedCodeKey, value);
+    }
+
+    function resetCode() {
+      editor.value = defaultCode;
+      saveCode(defaultCode);
+      update();
+    }
 
     let updateTimer = null;
     let editorHidden = false;
@@ -614,7 +633,7 @@
       toggleEditorButton.textContent = editorHidden ? 'Show Editor' : 'Hide Editor';
     }
 
-    editor.value = defaultCode;
+    editor.value = loadSavedCode();
     update();
     applyViewport();
 
@@ -627,7 +646,18 @@
     });
     resizeObserver.observe(viewportFrame);
 
-    editor.addEventListener('input', scheduleUpdate);
+    editor.addEventListener('input', () => {
+      scheduleUpdate();
+      saveCode(editor.value);
+    });
+
+    resetButton.addEventListener('click', resetCode);
+
+    window.addEventListener('keydown', (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'r') {
+        localStorage.removeItem(savedCodeKey);
+      }
+    });
 
     viewportSelect.addEventListener('change', applyViewport);
     viewportWidth.addEventListener('focus', () => {
@@ -673,6 +703,67 @@
       viewportSelect.value = 'custom';
       applyViewport();
     });
+
+    // Drag-to-resize divider (drag bar)
+    (function() {
+      let dragging = false;
+      let startX = 0;
+      let startLeftWidth = 0;
+
+      divider.addEventListener('mousedown', (e) => {
+        dragging = true;
+        divider.classList.add('active');
+        startX = e.clientX;
+        const rect = document.querySelector('.editor-panel').getBoundingClientRect();
+        startLeftWidth = rect.width;
+        document.body.style.userSelect = 'none';
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        const dx = e.clientX - startX;
+        let newLeft = startLeftWidth + dx;
+        const totalWidth = layout.getBoundingClientRect().width;
+        const minLeft = Math.max(minEditorWidth, 80);
+        const maxLeft = totalWidth - minPreviewWidth - divider.offsetWidth - 20;
+        newLeft = Math.max(minLeft, Math.min(maxLeft, newLeft));
+        const right = totalWidth - newLeft - divider.offsetWidth;
+        layout.style.gridTemplateColumns = `${newLeft}px ${divider.offsetWidth}px ${right}px`;
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!dragging) return;
+        dragging = false;
+        divider.classList.remove('active');
+        document.body.style.userSelect = '';
+      });
+
+      // touch support
+      divider.addEventListener('touchstart', (e) => {
+        const t = e.touches[0];
+        dragging = true;
+        startX = t.clientX;
+        const rect = document.querySelector('.editor-panel').getBoundingClientRect();
+        startLeftWidth = rect.width;
+      }, {passive: true});
+
+      window.addEventListener('touchmove', (e) => {
+        if (!dragging) return;
+        const t = e.touches[0];
+        const dx = t.clientX - startX;
+        let newLeft = startLeftWidth + dx;
+        const totalWidth = layout.getBoundingClientRect().width;
+        const minLeft = Math.max(minEditorWidth, 80);
+        const maxLeft = totalWidth - minPreviewWidth - divider.offsetWidth - 20;
+        newLeft = Math.max(minLeft, Math.min(maxLeft, newLeft));
+        const right = totalWidth - newLeft - divider.offsetWidth;
+        layout.style.gridTemplateColumns = `${newLeft}px ${divider.offsetWidth}px ${right}px`;
+      }, {passive: true});
+
+      window.addEventListener('touchend', () => {
+        dragging = false;
+      });
+    })();
   </script>
 </body>
 </html>
