@@ -4,9 +4,111 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HTML Live Editor</title>
-  <link rel="stylesheet" href="/styles.css">
-  <!--
-    <style>
+  <style>
+    .viewport-frame {
+      resize: both;
+      overflow: auto;
+      min-width: 320px;
+      min-height: 320px;
+    }
+
+    .viewer {
+      min-width: 100%;
+      min-height: 100%;
+    }
+
+    .editor-container {
+      resize: vertical;
+      overflow: auto;
+      min-height: 240px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 1000;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      width: min(92vw, 900px);
+      height: min(80vh, 640px);
+      display: flex;
+      flex-direction: column;
+      resize: both;
+      overflow: hidden;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem;
+      border-bottom: 1px solid #1f2937;
+      background: #111827;
+      color: #e2e8f0;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .modal-close {
+      border: none;
+      background: transparent;
+      color: #e2e8f0;
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-body {
+      flex: 1;
+      padding: 1rem;
+      overflow: hidden;
+      display: flex;
+      min-height: 0;
+    }
+
+    .modal-viewport {
+      flex: 1;
+      border: 2px solid #334155;
+      border-radius: 18px;
+      overflow: hidden;
+      background: white;
+      min-width: 320px;
+      min-height: 240px;
+    }
+
+    .modal-viewport.mobile {
+      border-radius: 28px;
+    }
+
+    .modal .viewer {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #fff;
+      display: block;
+    }
+  </style>
+  <style>
     body {
       margin: 0;
       font-family: system-ui, Arial, sans-serif;
@@ -67,7 +169,8 @@
     }
 
     button#toggleEditorButton,
-    button#formatButton {
+    button#formatButton,
+    button#openPreviewModalButton {
       padding: 0.5rem 0.9rem;
       border: 1px solid #2a2a2a;
       border-radius: 8px;
@@ -78,7 +181,8 @@
     }
 
     button#toggleEditorButton:hover,
-    button#formatButton:hover {
+    button#formatButton:hover,
+    button#openPreviewModalButton:hover {
       background: #333;
     }
 
@@ -90,7 +194,7 @@
     .layout {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(240px, 1fr) 8px minmax(320px, 1fr);
       gap: 1rem;
       padding: 1rem;
       min-height: 0;
@@ -100,8 +204,25 @@
       grid-template-columns: 1fr;
     }
 
-    .layout.editor-hidden .editor-panel {
+    .layout.editor-hidden .editor-panel,
+    .layout.editor-hidden .resizer {
       display: none;
+    }
+
+    .resizer {
+      width: 8px;
+      min-width: 8px;
+      cursor: col-resize;
+      background: #1f2937;
+      border-radius: 9999px;
+      transition: background 0.2s ease;
+      align-self: stretch;
+      justify-self: center;
+    }
+
+    .resizer:hover,
+    .resizer.active {
+      background: #2563eb;
     }
 
     .panel {
@@ -226,7 +347,71 @@
       }
     }
   </style>
--->
+  <style>
+    .viewport-validation {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 0.35rem;
+    }
+
+    .viewport-validation.is-hidden {
+      display: none;
+    }
+
+    .viewport-validation-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.2rem;
+      height: 1.2rem;
+      border-radius: 999px;
+      background: #ef4444;
+      color: white;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: help;
+      user-select: none;
+    }
+
+    .viewport-validation-tooltip {
+      position: absolute;
+      top: calc(100% + 0.35rem);
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      max-width: 220px;
+      padding: 0.5rem 0.65rem;
+      border-radius: 8px;
+      background: #111827;
+      color: #f9fafb;
+      font-size: 0.8rem;
+      line-height: 1.35;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.24);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.15s ease;
+      z-index: 2000;
+    }
+
+    .viewport-validation:hover .viewport-validation-tooltip,
+    .viewport-validation:focus-within .viewport-validation-tooltip {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .viewport-validation-fix {
+      margin-top: 0.35rem;
+      border: none;
+      border-radius: 6px;
+      padding: 0.3rem 0.5rem;
+      background: #3b82f6;
+      color: white;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+  </style>
 </head>
 <body>
   <header>
@@ -249,8 +434,15 @@
         <span>H</span>
         <input id="viewportHeight" type="number" min="320" max="1800" value="844">
       </label>
+      <span id="viewportValidation" class="viewport-validation is-hidden" aria-live="polite">
+        <span class="viewport-validation-icon" aria-hidden="true">!</span>
+        <span class="viewport-validation-tooltip">
+          <div>Invalid viewport dimensions. Width and height must be whole numbers ≥ 320.</div>
+          <button id="viewportValidationFix" type="button" class="viewport-validation-fix">Fix to 390 × 844</button>
+        </span>
+      </span>
       <button id="toggleEditorButton">Hide Editor</button>
-      <button id="formatButton">Format Code</button>
+      <button id="openPreviewModalButton">Open Preview</button>
     </div>
   </header>
   <div class="layout">
@@ -261,6 +453,7 @@
         <textarea id="editor" spellcheck="false"></textarea>
       </div>
     </section>
+    <div id="divider" class="resizer" title="Drag to resize"></div>
     <section class="panel preview-panel">
       <h2>Live Preview</h2>
       <div class="viewport-shell">
@@ -270,24 +463,46 @@
       </div>
     </section>
   </div>
+
+  <div id="previewModal" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="previewModalTitle">
+      <div class="modal-header">
+        <h2 id="previewModalTitle">Live Preview</h2>
+        <button id="closeModalButton" class="modal-close" type="button" aria-label="Close Preview">×</button>
+      </div>
+      <div class="modal-body">
+        <div id="modalViewport" class="modal-viewport">
+          <iframe id="modalViewer" class="viewer"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="footer">Type HTML in the left editor. The preview updates automatically.</div>
 
   <script>
     const editor = document.getElementById('editor');
     const highlight = document.querySelector('.highlight');
     const viewer = document.getElementById('viewer');
-    const formatButton = document.getElementById('formatButton');
     const toggleEditorButton = document.getElementById('toggleEditorButton');
     const viewportSelect = document.getElementById('viewportSelect');
     const viewportWidth = document.getElementById('viewportWidth');
     const viewportHeight = document.getElementById('viewportHeight');
     const viewportFrame = document.getElementById('viewportFrame');
+    const divider = document.getElementById('divider');
     const layout = document.querySelector('.layout');
+    const previewModal = document.getElementById('previewModal');
+    const openPreviewModalButton = document.getElementById('openPreviewModalButton');
+    const closeModalButton = document.getElementById('closeModalButton');
+    const modalViewer = document.getElementById('modalViewer');
+    const minEditorWidth = 240;
+    const minPreviewWidth = 320;
 
     const defaultCode = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>Preview</title>\n  <style>\n    body { font-family: Arial, sans-serif; padding: 2rem; color: #333; }\n    h1 { color: #3b82f6; }\n  </style>\n</head>\n<body>\n  <h1>HTML Live Editor</h1>\n  <p>Type HTML on the left and see it rendered live on the right.</p>\n</body>\n</html>`;
 
     let updateTimer = null;
     let editorHidden = false;
+    let viewportIsEditing = false;
 
     function escapeHtml(text) {
       return text
@@ -311,69 +526,84 @@
         .replace(/(&gt;)([^&<]*?)(?=&lt;|$)/g, (match, gt, text) => `${gt}<span class="text">${text}</span>`);
     }
 
-    function formatHtml(html) {
-      const voidTags = /^(area|base|br|col|embed|hr|img|input|link|meta|param|source|track|wbr)$/i;
-      const lines = html
-        .trim()
-        .replace(/>\s*</g, '><')
-        .replace(/>/g, '>\n<')
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.length);
-
-      let indent = 0;
-      return lines.map(line => {
-        if (line.startsWith('</')) {
-          indent = Math.max(indent - 1, 0);
-        }
-
-        const padded = '  '.repeat(indent) + line;
-        const tagName = line.match(/^<\/?([a-zA-Z0-9:-]+)/)?.[1] || '';
-
-        if (
-          line.startsWith('<') &&
-          !line.startsWith('</') &&
-          !line.startsWith('<!--') &&
-          !line.endsWith('/>') &&
-          !voidTags.test(tagName)
-        ) {
-          indent++;
-        }
-
-        return padded;
-      }).join('\n');
-    }
-
     function update() {
       const code = editor.value;
       viewer.srcdoc = code;
+      if (modalViewer) {
+        modalViewer.srcdoc = code;
+      }
+    }
+
+    function openPreviewModal() {
+      previewModal.classList.remove('hidden');
+      previewModal.setAttribute('aria-hidden', 'false');
+      if (modalViewer) {
+        modalViewer.srcdoc = editor.value;
+      }
+    }
+
+    function closePreviewModal() {
+      previewModal.classList.add('hidden');
+      previewModal.setAttribute('aria-hidden', 'true');
     }
 
     function scheduleUpdate() {
-      if (updateTimer) {
-        cancelAnimationFrame(updateTimer);
-      }
-      updateTimer = requestAnimationFrame(update);
+      clearTimeout(updateTimer);
+      updateTimer = setTimeout(update, 450);
+    }
+
+    function isValidDimension(value) {
+      const trimmed = value.trim();
+      return /^\d+$/.test(trimmed) && Number(trimmed) >= 320;
+    }
+
+    function showViewportValidation() {
+      viewportValidation.classList.remove('is-hidden');
+    }
+
+    function hideViewportValidation() {
+      viewportValidation.classList.add('is-hidden');
     }
 
     function applyViewport() {
       const mode = viewportSelect.value;
+
       if (mode === 'desktop') {
         viewportFrame.style.width = '100%';
         viewportFrame.style.height = '100%';
-      } else if (mode === 'mobile') {
+        viewportFrame.classList.remove('mobile');
+        hideViewportValidation();
+        return;
+      }
+
+      if (mode === 'mobile') {
         viewportFrame.style.width = '390px';
         viewportFrame.style.height = '844px';
-      } else if (mode === 'tablet') {
+        viewportFrame.classList.add('mobile');
+        hideViewportValidation();
+        return;
+      }
+
+      if (mode === 'tablet') {
         viewportFrame.style.width = '768px';
         viewportFrame.style.height = '1024px';
-      } else {
-        const width = Math.max(320, parseInt(viewportWidth.value || '390', 10));
-        const height = Math.max(320, parseInt(viewportHeight.value || '844', 10));
-        viewportFrame.style.width = `${width}px`;
-        viewportFrame.style.height = `${height}px`;
+        viewportFrame.classList.add('mobile');
+        hideViewportValidation();
+        return;
       }
-      viewportFrame.classList.toggle('mobile', mode !== 'desktop');
+
+      const rawWidth = viewportWidth.value.trim();
+      const rawHeight = viewportHeight.value.trim();
+
+      if (!isValidDimension(rawWidth) || !isValidDimension(rawHeight)) {
+        showViewportValidation();
+        return;
+      }
+
+      viewportFrame.style.width = `${Number(rawWidth)}px`;
+      viewportFrame.style.height = `${Number(rawHeight)}px`;
+      viewportFrame.classList.remove('mobile');
+      hideViewportValidation();
     }
 
     function toggleEditorView() {
@@ -387,18 +617,61 @@
     update();
     applyViewport();
 
+    const resizeObserver = new ResizeObserver(() => {
+      if (viewportSelect.value === 'custom') {
+        const rect = viewportFrame.getBoundingClientRect();
+        viewportWidth.value = Math.round(rect.width);
+        viewportHeight.value = Math.round(rect.height);
+      }
+    });
+    resizeObserver.observe(viewportFrame);
+
     editor.addEventListener('input', scheduleUpdate);
 
     viewportSelect.addEventListener('change', applyViewport);
-    viewportWidth.addEventListener('input', applyViewport);
-    viewportHeight.addEventListener('input', applyViewport);
-
-    formatButton.addEventListener('click', () => {
-      editor.value = formatHtml(editor.value);
-      update();
+    viewportWidth.addEventListener('focus', () => {
+      viewportIsEditing = true;
+      viewportSelect.value = 'custom';
+    });
+    viewportHeight.addEventListener('focus', () => {
+      viewportIsEditing = true;
+      viewportSelect.value = 'custom';
+    });
+    viewportWidth.addEventListener('input', () => {
+      viewportSelect.value = 'custom';
+      hideViewportValidation();
     });
 
-    toggleEditorButton.addEventListener('click', toggleEditorView);
+    viewportHeight.addEventListener('input', () => {
+      viewportSelect.value = 'custom';
+      hideViewportValidation();
+    });
+
+    viewportWidth.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        viewportSelect.value = 'custom';
+        applyViewport();
+      }
+    });
+
+    viewportHeight.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        viewportSelect.value = 'custom';
+        applyViewport();
+      }
+    });
+
+    viewportWidth.addEventListener('blur', applyViewport);
+    viewportHeight.addEventListener('blur', applyViewport);
+
+    viewportValidationFix.addEventListener('click', () => {
+      viewportWidth.value = '390';
+      viewportHeight.value = '844';
+      viewportSelect.value = 'custom';
+      applyViewport();
+    });
   </script>
 </body>
 </html>
